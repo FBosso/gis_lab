@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Lab</title>
+    <!-- IMPORT OL -->
+    <link rel="stylesheet" href="v6.4.3/css/ol.css"> <script src="v6.4.3/build/ol.js"></script>
+
+    <!-- IMPORT SWITCHER -->
+    <script src="http://rawgit.com/walkermatt/ol-layerswitcher/master/dist/ol-layerswitcher.js"></script>
+    <link rel="stylesheet" href="http://rawgit.com/walkermatt/ol-layerswitcher/master/src/ol-layerswitcher.css">
+
+    
+
+    <!-- JQUERY -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"integrity="sha256- CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="crossorigin="anonymous"></script>
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+
+     <!-- BOOTSTRAP - POPUP -->
+    
+    <script src="v6.4.3/apidoc/scripts/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300&display=swap" rel="stylesheet">
+
+    <!-- LINL CSS FILE -->
+    <link rel="stylesheet" href="blog.css">
+    <title>Document</title>
+
+    
+</head>
+<body>
+
+
+<nav class="navbar navbar-expand-lg navbar-light navbar-bg-white">
+        <div class="container navbar-container">
+           
+            <a class="navbar-brand" href="homepage.html"><img width="100" src="media/logo.png" alt="">GIS Lab</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="homepage.html" id="homepage">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="intercomparison.html" id="statistics">Intercomparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="validation.html" id="crowdfunding">Validation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html" id="crowdfunding">Results</a>
+                    </li>
+                
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+<title>Homepage</title>
+
+
+
+
+    
+    
+
+
+
+<div class="container contenuto-container">
+    <div class="row no-gutters"> <!-- no gutters serve per eliminare il padding "gutters" = grondaie -->
+        <div class="col-md-9 order-md-2">
+            
+            <div class="single-post-home">
+                
+                <h8 class="created-by"> </h8>
+                <h1>Intercomparison</h1>
+                <hr>
+
+                <!-- MAP SECTION -->
+                <div id="map">
+                    <div id="popup"></div>
+                </div>
+                <div id='get-feature-info' style="display:none">here</div>
+    
+
+    <!-- LINK JS FILE -->
+    <script src="blog.js"></script>
+                <hr>
+                <h2>Intercomparison Python code</h2>
+
+
+                <div class="code">
+
+
+            <pre>
+from qgis.core import QgsProcessing
+from qgis.core import QgsProcessingAlgorithm
+from qgis.core import QgsProcessingMultiStepFeedback
+from qgis.core import QgsProcessingParameterRasterLayer
+from qgis.core import QgsProcessingParameterFileDestination
+from qgis.core import QgsProcessingParameterRasterDestination
+import processing
+
+
+class Intercomparison(QgsProcessingAlgorithm):
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(QgsProcessingParameterRasterLayer('ghspopintfinal', 'GHS_POP_int_final', defaultValue=None))
+        self.addParameter(QgsProcessingParameterRasterLayer('worldpopintfinal', 'WorldPop_int_final', defaultValue=None))
+        self.addParameter(QgsProcessingParameterFileDestination('Covar_stats', 'Covar_stats', fileFilter='Html files (*.html)', createByDefault=True, defaultValue=None))
+        self.addParameter(QgsProcessingParameterFileDestination('Intercomp_statshtml', 'Intercomp_stats.HTML', fileFilter='Txt files (*.txt)', createByDefault=True, defaultValue=None))
+        self.addParameter(QgsProcessingParameterRasterDestination('Intercomp_diff', 'Intercomp_diff', createByDefault=True, defaultValue=None))
+
+    def processAlgorithm(self, parameters, context, model_feedback):
+        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
+        # overall progress through the model
+        feedback = QgsProcessingMultiStepFeedback(3, model_feedback)
+        results = {}
+        outputs = {}
+
+        # Intercomp_diff
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"GHS_POP_int_final@1\" - \"WorldPop_int_final@1\" ) ',
+            'EXTENT': None,
+            'LAYERS': [parameters['ghspopintfinal'],parameters['worldpopintfinal']],
+            'OUTPUT': parameters['Intercomp_diff']
+        }
+        outputs['Intercomp_diff'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        results['Intercomp_diff'] = outputs['Intercomp_diff']['OUTPUT']
+
+        feedback.setCurrentStep(1)
+        if feedback.isCanceled():
+            return {}
+
+        # r.covar
+        alg_params = {
+            '-r': True,
+            'GRASS_REGION_CELLSIZE_PARAMETER': 0,
+            'GRASS_REGION_PARAMETER': None,
+            'map': [parameters['ghspopintfinal'],parameters['worldpopintfinal']],
+            'html': parameters['Covar_stats']
+        }
+        outputs['Rcovar'] = processing.run('grass7:r.covar', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        results['Covar_stats'] = outputs['Rcovar']['html']
+
+        feedback.setCurrentStep(2)
+        if feedback.isCanceled():
+            return {}
+
+        # r.univar
+        alg_params = {
+            '-e': False,
+            'GRASS_REGION_CELLSIZE_PARAMETER': 0,
+            'GRASS_REGION_PARAMETER': None,
+            'map': outputs['Intercomp_diff']['OUTPUT'],
+            'percentile': '',
+            'separator': 'pipe',
+            'zones': None,
+            'output': parameters['Intercomp_statshtml']
+        }
+        outputs['Runivar'] = processing.run('grass7:r.univar', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        results['Intercomp_statshtml'] = outputs['Runivar']['output']
+        return results
+
+    def name(self):
+        return 'Intercomparison'
+
+    def displayName(self):
+        return 'Intercomparison'
+
+    def group(self):
+        return ''
+
+    def groupId(self):
+        return ''
+
+    def createInstance(self):
+        return Intercomparison()
+
+                </pre>
+                </div>
+
+
+            
+            <hr>
+            <h2>Intercomparison</h2>
+
+
+            <p align="justify">
+
+The step of intercomparison aims at quantifying similarities and differences of the two datasets and was carried out by producing a raster of differences using the Raster Calculator (GHSL – WorldPop) and then computing the basic statistics of this raster (Processing > GRASS > Raster > r.univar). Additionally the correlation factor between the whole GHSL and the WorldPop raster, as well as between each of the 29 pairs of study area tiles has been computed to better locate areas of significant population variation (Processing > GRASS > Raster > r.covar).
+
+            </p>
+
+            <h2>Intercomparison results</h2>
+
+<img width="100%" src="http://localhost/webgis/media/table1.png">
+<p class="title-snippet"> Table 1. Statistics of the differences between the GHSL and the WorldPop layer.</p>
+
+            <p align="justify">
+
+Null cells (no data cells) and non-null cells (all other cells) of the map of differences expectably resemble the number of null cells and non-null cells of the GHSL and the WorldPop layer, resepectively.
+
+If two non-null cells are equal to another the difference between them is zero. The mean difference lies close to zero, at -0.326, suggesting an overall close match of the two maps. Yet the range is high at 105342, indicating a large discrepancy between individual cells (see table 1).
+
+The computation of the covariance matrix between the GHSL and the WorldPop layer for each tile of the study area, results predominantly in correlation factors close to 1 (see table 2). Yet the correlation factor of both maps for the full extent of the study area amounts to 0.87, suggesting individual areas of low correlation. Two tiles (Field ID; 155 and 156) exclusively contain no data values (null cells) for both maps and thus do not produce a correlation factor. 
+
+Notably low correlation factors can be observed in the tiles 186, 187, 207, 208, 209, 211 and 212. When confronting this observation with the map of differences, it can be confirmed that these tiles correspond with the map area where differences exhibit the highest values with the most persistent deviation from zero. It is the area where population indications of both maps differ the most and the data should therefore be treated sensibly here.
+
+            </p>
+
+<img width="100%" src="http://localhost/webgis/media/fig3.png">
+<p class="title-snippet"> Figure 3. The study area divided into 29 numbered tiles.</p>
+            
+<img class="center" width="30%" src="http://localhost/webgis/media/table2.png">
+<p class="title-snippet"> Table 2. Correlation factor between the GHSL and the WorldPop layer computed for each tile of the study area (see fig. 3)</p>
+            </div>
+            
+        <script type="text/javascript" language="javascript">
+            function visualizza(id){
+              if (document.getElementById){
+                if(document.getElementById(id).style.display == 'none'){
+                  document.getElementById(id).style.display = 'block';
+                }else{
+                  document.getElementById(id).style.display = 'none';
+                }
+              }
+            }
+        </script>
+
+
+        </div>
+        <div class="col-md-3 order-md-1">
+            <div class="about-snippet-block text-center">
+                <a class = "action" href="/create">
+                    <button onclick="visualizza('get-feature-info'); return false" class="btn btn-outline-secondary button-snippet-create">Display Table Tiles</button>
+                    <hr>
+                    <button onclick="visualizza('worldpoppreprocessed'); return false" class="btn btn-outline-secondary button-snippet-create">World pop preprocessed</button>
+                    <button onclick="visualizza('GHSpreprocessed'); return false" class="btn btn-outline-secondary button-snippet-create">GHS preprocessed</button>
+                    <button onclick="visualizza('mapdiff'); return false" class="btn btn-outline-secondary button-snippet-create">Map of differences</button>
+                    <button onclick="visualizza('corrtiles'); return false" class="btn btn-outline-secondary button-snippet-create">Correlation tiles</button>
+                </a>
+                <hr>
+        
+                <p class="title-snippet"> Group members</p>
+                    <p>Bosso Francesco <br>10555965</p>
+                    <p>Colli carlo <br>10493935</p>
+                    <p>Dragun Leonie <br>10776334</p>
+                <hr>
+                <p class="title-snippet"> Vision</p>
+
+                <p id="worldpoppreprocessed" style="display:none">
+                    World pop preprocessed<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:WorldPOP_final32Int">
+                </p>
+                <p id="GHSpreprocessed" style="display:none">
+                    GHS preprocessed<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:GHS_POP_final32Int">
+                </p>
+                <p id="mapdiff" style="display:none">
+                    Map of differences<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:map_of_differences">
+                </p>
+                <p id="corrtiles" style="display:none">
+                    Correlation tiles<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:correlation_tiles">
+                </p>
+                
+            
+        </div>
+            </div>      
+        </div>
+    </div>
+</div>
+    
+    
+</body>
+</html>
+
+

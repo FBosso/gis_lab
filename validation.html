@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Lab</title>
+    <!-- IMPORT OL -->
+    <link rel="stylesheet" href="v6.4.3/css/ol.css"> <script src="v6.4.3/build/ol.js"></script>
+
+    <!-- IMPORT SWITCHER -->
+    <script src="http://rawgit.com/walkermatt/ol-layerswitcher/master/dist/ol-layerswitcher.js"></script>
+    <link rel="stylesheet" href="http://rawgit.com/walkermatt/ol-layerswitcher/master/src/ol-layerswitcher.css">
+
+    
+
+    <!-- JQUERY -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"integrity="sha256- CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="crossorigin="anonymous"></script>
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+
+     <!-- BOOTSTRAP - POPUP -->
+    
+    <script src="v6.4.3/apidoc/scripts/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300&display=swap" rel="stylesheet">
+
+    <!-- LINL CSS FILE -->
+    <link rel="stylesheet" href="blog.css">
+    <title>Document</title>
+
+    
+</head>
+<body>
+
+
+<nav class="navbar navbar-expand-lg navbar-light navbar-bg-white">
+        <div class="container navbar-container">
+           
+            <a class="navbar-brand" href="homepage.html"><img width="100" src="media/logo.png" alt="">GIS Lab</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="homepage.html" id="homepage">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="intercomparison.html" id="statistics">Intercomparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="validation.html" id="crowdfunding">Validation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html" id="crowdfunding">Results</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+<title>Homepage</title>
+
+
+
+
+    
+    
+
+
+
+<div class="container contenuto-container">
+    <div class="row no-gutters"> <!-- no gutters serve per eliminare il padding "gutters" = grondaie -->
+        <div class="col-md-9 order-md-2">
+            
+            <div class="single-post-home">
+                
+                <h8 class="created-by"> </h8>
+                <h1>Validation</h1>
+                <hr>
+
+                <!-- MAP SECTION -->
+                <div id="map">
+                    <div id="popup"></div>
+                    <div><img id="legend"/></div>
+                </div>
+    
+
+    <!-- LINK JS FILE -->
+    <script src="blog2.js"></script>
+                <hr>
+                <hr>
+                <h2>Validation Python code</h2>
+
+
+                <div class="code">
+
+
+            <pre>
+from qgis.core import QgsProcessing
+from qgis.core import QgsProcessingAlgorithm
+from qgis.core import QgsProcessingMultiStepFeedback
+from qgis.core import QgsProcessingParameterRasterLayer
+from qgis.core import QgsProcessingParameterRasterDestination
+import processing
+
+
+class Validation(QgsProcessingAlgorithm):
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(QgsProcessingParameterRasterLayer('ghspop', 'GHS_POP', defaultValue=None))
+        self.addParameter(QgsProcessingParameterRasterLayer('worldpop', 'WorldPop', defaultValue=None))
+        self.addParameter(QgsProcessingParameterRasterDestination('Final_diff_rec', 'final_diff_rec', createByDefault=True, defaultValue=None))
+
+    def processAlgorithm(self, parameters, context, model_feedback):
+        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
+        # overall progress through the model
+        feedback = QgsProcessingMultiStepFeedback(6, model_feedback)
+        results = {}
+        outputs = {}
+
+        # GHS_POP_rec
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"GHS_POP@1\"=0)*1  +  ( \"GHS_POP@1\" >=0)*2 ',
+            'EXTENT': None,
+            'LAYERS': parameters['ghspop'],
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['Ghs_pop_rec'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(1)
+        if feedback.isCanceled():
+            return {}
+
+        # WorldPop_rec
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"WorldPop@1\" = 0 )  * 1 +  ( \"WorldPop@1\" >= 0 )  * 2',
+            'EXTENT': None,
+            'LAYERS': parameters['worldpop'],
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['Worldpop_rec'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(2)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate GHS_POP_rec_int
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 2,
+            'INPUT': outputs['Ghs_pop_rec']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['TranslateGhs_pop_rec_int'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(3)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate WorldPop_rec_int
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 2,
+            'INPUT': outputs['Worldpop_rec']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['TranslateWorldpop_rec_int'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(4)
+        if feedback.isCanceled():
+            return {}
+
+        # Diff_rec_calculator
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"\'Converted\' from algorithm \'Translate GHS_POP_rec_int\'@1\" - \"\'Converted\' from algorithm \'Translate WorldPop_rec_int\'@1\" )  + 1',
+            'EXTENT': None,
+            'LAYERS': [outputs['TranslateGhs_pop_rec_int']['OUTPUT'],outputs['TranslateWorldpop_rec_int']['OUTPUT']],
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['Diff_rec_calculator'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(5)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate (convert format)
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 0,
+            'INPUT': outputs['Diff_rec_calculator']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': parameters['Final_diff_rec']
+        }
+        outputs['TranslateConvertFormat'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        results['Final_diff_rec'] = outputs['TranslateConvertFormat']['OUTPUT']
+        return results
+
+    def name(self):
+        return 'VALIDATION'
+
+    def displayName(self):
+        return 'VALIDATION'
+
+    def group(self):
+        return ''
+
+    def groupId(self):
+        return ''
+
+    def createInstance(self):
+        return Validation()
+                </pre>
+
+            </div>
+            <hr>
+            <h2>Validation</h2>
+
+
+            <p align="justify">
+
+The validation process requires two thematic maps. The two maps are thus reclassified to a binary notation which represents only built and not built areas using the Raster Calculator.
+
+<br><br>If Cell value > 0   : new cell value = 2, denotes: built
+
+<br>Cell value = 0  : new cell value = 1, denotes: not built
+
+<br><br>The reclassified maps are validated in stratified sampling points. For this purpose, three strata are formed based on three scenarios. 
+
+<br>The raster layer with the notation of the three scenarios is created by computing the difference map between the previously reclassified maps and adding 1, using the Raster Calculator.
+
+<br>(GHSL Reclass – WorldPop Reclass) +1
+
+<br>The result is a raster layer containing cell values of 0, 1 and 2, representing the following scenarios:
+
+<br><br>0 – The GHSL is not populated (not built), but the WorldPop layer is populated (built)
+
+<br>1 – GHSL and WorldPop layer are either both populated (built) or unpopulated (not built)
+
+<br>2 – The WorldPop layer is not populated (not built), but the GHSL is populated (built) 
+
+<br>Using the QGIS plugin for Accuracy Assessment of Thematic Maps (AcATaMa) a vector layer of 600 random sample points is created, equally distributed across the three strata;
+
+<br><br>33% of sample points: The GHSL is not populated, but the WorldPop layer is
+
+<br>34% of sample points: GHSL and WorldPop layer are either both populated or unpopulated
+
+<br>33% of sample points: WorldPop layer is not populated but the GHSL is
+
+<br><br>with a minimum distance between the sampling points set to 0.08 degrees (= the length of 10 cells) to prevent grouping of reference points.
+
+<br>The validation is preceded by the photo-interpretation of very high resolution imagery from two satellites (Google and Bing were chosen, to allow alternation in case of unclear imagery) in the 600 sampling points that are classified to be either urban (populated/built) or not urban (not populated/not built), based on whether or not at least one building is detectable within the extent of the satellite image which is set to cell size (0.008 deg x 0.008 deg) (see fig. 2). These 600 validated classified sampling points are subsequently tested against the reclassified versions (built/not built) of the GHSL and the WorldPop layer using the Accuracy Assessment tool of AcATaMa which provides error matrices and accuracy indices for both assessed maps.
+
+</p>
+
+<img width="100%" src="http://localhost/webgis/media/acatama1.png">
+<img width="100%" src="http://localhost/webgis/media/acatama1.png">
+<p class="title-snippet"> Figure 2. Photo-interpretation procedure using the QGIS plugin AcATaMa. The satellite imagery is interpretated to be either not urban (I) or urban (II). The imagery window size (fit to sample) is set to 0.004 deg. which resembles the cell size of the assessed raster maps (0.008 x 0.008 deg.)</p>
+
+<hr>
+<h2>Validation results</h2>
+
+<img width="100%" src="http://localhost/webgis/media/fig4_top.png">
+<img width="100%" src="http://localhost/webgis/media/fig4_bottom.png">
+<p class="title-snippet"> Figure 4. The reclassified maps of the GHSL (top) and the WorldPop layer (bottom) represent only urban/built and not urban/not built raster cells.</p>
+<img width="100%" src="http://localhost/webgis/media/fig5.png">
+<p class="title-snippet"> Figure 5. Three-scenario-raster used to stratify the sampling points, representing the following:
+
+<br>0 – The GHSL is not urban, but the WorldPop layer is 
+
+<br>1 – GHSL and WorldPop layer are either both urban or not urban
+
+<br>2 – The WorldPop layer is not not urban, but the GHSL is
+
+</p>
+<img width="100%" src="http://localhost/webgis/media/fig6.png">
+<p class="title-snippet"> Figure 6. Vector layer of 600 sampling points randomly distributed across the study area, with set minimum distances of 0.08 deg., equally representing all three scenarios of the three strata.</p>
+
+
+            <p align="justify">
+
+The 600 validated classified sampling points have been tested against the reclassified versions (built/not built) of the GHSL and the WorldPop layer. Error matrices and accuracy indices for both assessed maps can be seen in table 3 and 4.
+
+            </p>
+<img width="100%" src="http://localhost/webgis/media/table3.png">
+<p class="title-snippet"> Table 3. The error matrix and accuracy indices that result from testing the reclassified GHSL against the validated classified sampling points. </p>
+
+<img width="100%" src="http://localhost/webgis/media/table4.png">
+<p class="title-snippet"> Table 4. The error matrix and accuracy indices that result from testing the reclassified WorldPop layer against the validated classified sampling points. </p>
+
+            <p align="justify">
+
+The photo-validation of urban and not urban classification data in 600 reference raster cells revealed a 57.2% proportion of correctly classified raster cells in the GHS layer, while the WorldPop layer mapped 67.2% of reference raster cells correctly. In addition to the overall accuracy the WorldPop layer also exhibits a greater user’s and producer’s accuracy of both classes compared to the GHSL. The user’s accuracy represents the proportion of times a class feature (cell with at least one building or with  no building) on the map will actually be present on the ground and thus it describes the map’s reliability (user accuracy = 100%-commission error) (Accuracy Metrics, 2021). The user accuracy of the WorldPop layer is 80% for the not urban class but only 52% for the urban class. A similar disproportion of user accuracy in the two classes can be observed for the GHS layer with 71.1% in the not urban class and only 41% in the urban class. The user accuracy in the urban class (2) is significantly lower than in class 1 for both layers which suggests a greater unreliability of the urban classification in general or put differently; the chances that an area marked as urban on the map, is in fact not built on the ground are significantly higher than the chances that an area marked as not urban on the map, will in fact accommodate a building.
+<br>
+<br>The producer accuracy describes the proportion of times that a real feature (building or no building) on the ground is correctly classified on the map (urban or not urban), and therefore represents the probability that the specific feature on the ground is classified correctly on the map (producer’s accuracy = 100% - omission error) (Accuracy Metrics, 2021). The producer’s accuracy of the WorldPop layer is again higher than that of the GHSL, with 66% accuracy in the non-urban class compared to a 58.3% of the GHSL and 70% accuracy in the urban class compared to a 55.1% of the GHSL. For the urban class, the WorldPop layer exhibits a producer’s accuracy of 70% and a user’s accuracy of 52%, which means that even though 70% of validated reference urban areas are correctly classed as urban on the map, only 52% of the areas that are classed as urban, are actually urban on the ground. In the not urban class, the WorldPop layer has a producer’s accuracy of 66% and a user’s accuracy of 80%. This means that 66% of reference non-urban areas were correctly classed as such on the map and 80% of areas classed as not urban on the map were confirmed to be not urban on the ground. It is noted that human error at the stage of photo-interpretation needs to be put into consideration when evaluating these statistics.
+
+
+
+            </p>
+
+
+
+            
+            </div>
+         
+        <script type="text/javascript" language="javascript">
+            function visualizza(id){
+              if (document.getElementById){
+                if(document.getElementById(id).style.display == 'none'){
+                  document.getElementById(id).style.display = 'block';
+                }else{
+                  document.getElementById(id).style.display = 'none';
+                }
+              }
+            }
+        </script>
+
+
+        </div>
+        <div class="col-md-3 order-md-1">
+            <div class="about-snippet-block text-center">
+                <a class = "action" href="/create">
+                    <button onclick="visualizza('diffreclass'); return false" class="btn btn-outline-secondary button-snippet-create">Difference - 3 scenario</button>
+                    <button onclick="visualizza('WPreclass'); return false" class="btn btn-outline-secondary button-snippet-create">World Pop reclass</button>
+                    <button onclick="visualizza('GHSreclass'); return false" class="btn btn-outline-secondary button-snippet-create">GHS reclass</button>
+                    <button onclick="visualizza('corrtiles'); return false" class="btn btn-outline-secondary button-snippet-create">Correlation tiles</button>
+                </a>
+                <hr>
+        
+                <p class="title-snippet"> Group members</p>
+                    <p>Bosso Francesco <br>10555965</p>
+                    <p>Colli carlo <br>10493935</p>
+                    <p>Dragun Leonie <br>10776334</p>
+                <hr>
+                <p class="title-snippet"> Vision</p>
+
+                <p id="diffreclass" style="display:none">
+                    Difference - 3 scenario<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:diff_reclass">
+                </p>
+                <p id="WPreclass" style="display:none">
+                    World Pop reclass<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:WorldPOP_reclass">
+                </p>
+                <p id="GHSreclass" style="display:none">
+                    GHS reclass<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:ghs_reclass">
+                </p>
+                <p id="corrtiles" style="display:none">
+                    Correlation tiles<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:correlation_tiles">
+                </p>
+            
+            </div>
+        </div>      
+        </div>
+    </div>
+</div>
+    
+    
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

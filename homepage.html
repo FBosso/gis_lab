@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Lab</title>
+    <!-- IMPORT OL -->
+    <link rel="stylesheet" href="v6.4.3/css/ol.css"> <script src="v6.4.3/build/ol.js"></script>
+
+    <!-- IMPORT SWITCHER -->
+    <script src="http://rawgit.com/walkermatt/ol-layerswitcher/master/dist/ol-layerswitcher.js"></script>
+    <link rel="stylesheet" href="http://rawgit.com/walkermatt/ol-layerswitcher/master/src/ol-layerswitcher.css">
+
+    
+
+    <!-- JQUERY -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"integrity="sha256- CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="crossorigin="anonymous"></script>
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+
+     <!-- BOOTSTRAP - POPUP -->
+    
+    <script src="v6.4.3/apidoc/scripts/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300&display=swap" rel="stylesheet">
+
+    <!-- LINL CSS FILE -->
+    <link rel="stylesheet" href="blog.css">
+    <title>Document</title>
+
+    
+</head>
+<body>
+
+
+<nav class="navbar navbar-expand-lg navbar-light navbar-bg-white">
+        <div class="container navbar-container">
+           
+            <a class="navbar-brand" href="homepage.html"><img width="100" src="media/logo.png" alt="">GIS Lab</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="homepage.html" id="homepage">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="intercomparison.html" id="statistics">Intercomparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="validation.html" id="crowdfunding">Validation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html" id="crowdfunding">Results</a>
+                    </li>
+                
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+<title>Homepage</title>
+
+
+
+
+    
+    
+
+
+
+<div class="container contenuto-container">
+    <div class="row no-gutters"> <!-- no gutters serve per eliminare il padding "gutters" = grondaie -->
+        <div class="col-md-9 order-md-2">
+            
+            <div class="single-post-home">
+                
+                <h8 class="created-by"> </h8>
+                <h1>Gis Lab 2020 - 2021</h1>
+                <hr>
+
+                <!-- MAP SECTION -->
+                <div id="map">
+                    <div id="popup"></div>
+                    <div><img id="legend"/></div>
+                </div>
+    
+
+    <!-- LINK JS FILE -->
+    <script src="blog3.js"></script>
+                <hr>
+                <hr>
+                <h2>Preprocessing Python code</h2>
+
+
+                <div class="code">
+
+
+            <pre>
+from qgis.core import QgsProcessing
+from qgis.core import QgsProcessingAlgorithm
+from qgis.core import QgsProcessingMultiStepFeedback
+from qgis.core import QgsProcessingParameterRasterLayer
+from qgis.core import QgsProcessingParameterVectorLayer
+import processing
+
+
+class Preprocessing(QgsProcessingAlgorithm):
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(QgsProcessingParameterRasterLayer('ghspop', 'GHS_POP', defaultValue=None))
+        self.addParameter(QgsProcessingParameterVectorLayer('gislabgroup3', 'Gis_lab_group3', types=[QgsProcessing.TypeVectorPolygon], defaultValue=None))
+        self.addParameter(QgsProcessingParameterRasterLayer('worldpop', 'WorldPop', defaultValue=None))
+
+    def processAlgorithm(self, parameters, context, model_feedback):
+        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
+        # overall progress through the model
+        feedback = QgsProcessingMultiStepFeedback(9, model_feedback)
+        results = {}
+        outputs = {}
+
+        # Clip raster by mask layer GHS
+        alg_params = {
+            'ALPHA_BAND': False,
+            'CROP_TO_CUTLINE': True,
+            'DATA_TYPE': 0,
+            'INPUT': parameters['ghspop'],
+            'KEEP_RESOLUTION': False,
+            'MASK': parameters['gislabgroup3'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['ClipRasterByMaskLayerGhs'] = processing.run('gdal:cliprasterbymasklayer', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(1)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate GHS_POP(int32)
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 5,
+            'INPUT': outputs['ClipRasterByMaskLayerGhs']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['TranslateGhs_popint32'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(2)
+        if feedback.isCanceled():
+            return {}
+
+        # Clip raster by mask layer WorldPop
+        alg_params = {
+            'ALPHA_BAND': False,
+            'CROP_TO_CUTLINE': True,
+            'DATA_TYPE': 0,
+            'INPUT': parameters['worldpop'],
+            'KEEP_RESOLUTION': False,
+            'MASK': parameters['gislabgroup3'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['ClipRasterByMaskLayerWorldpop'] = processing.run('gdal:cliprasterbymasklayer', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(3)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate WorldPop (int32)
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 5,
+            'INPUT': outputs['ClipRasterByMaskLayerWorldpop']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['TranslateWorldpopInt32'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(4)
+        if feedback.isCanceled():
+            return {}
+
+        # r.null GHS
+        alg_params = {
+            '-c': False,
+            '-f': False,
+            '-i': False,
+            '-n': False,
+            '-r': False,
+            'GRASS_RASTER_FORMAT_META': '',
+            'GRASS_RASTER_FORMAT_OPT': '',
+            'GRASS_REGION_CELLSIZE_PARAMETER': 0,
+            'GRASS_REGION_PARAMETER': None,
+            'map': outputs['TranslateGhs_popint32']['OUTPUT'],
+            'null': None,
+            'setnull': '-200',
+            'output': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['RnullGhs'] = processing.run('grass7:r.null', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(5)
+        if feedback.isCanceled():
+            return {}
+
+        # Homologation_WorldPop1
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"\'Converted\' from algorithm \'Translate WorldPop (int32)\'@1\" < 0 )  * 0 +  ( \"\'Converted\' from algorithm \'Translate WorldPop (int32)\'@1\"  >=  0 )  * \"\'Converted\' from algorithm \'Translate WorldPop (int32)\'@1\"',
+            'EXTENT': None,
+            'LAYERS': outputs['TranslateWorldpopInt32']['OUTPUT'],
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['Homologation_worldpop1'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(6)
+        if feedback.isCanceled():
+            return {}
+
+        # Homologation WorldPop2
+        alg_params = {
+            'CELLSIZE': 0,
+            'CRS': None,
+            'EXPRESSION': ' ( \"\'Converted\' from algorithm \'Translate GHS_POP(int32)\'@1\" < 0 )  *  ( -200) +  ( \"\'Converted\' from algorithm \'Translate GHS_POP(int32)\'@1\"  >= 0 )  * \"\'Output\' from algorithm \'Homologation_WorldPop1\'@1\"',
+            'EXTENT': None,
+            'LAYERS': outputs['Homologation_worldpop1']['OUTPUT'],
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['HomologationWorldpop2'] = processing.run('qgis:rastercalculator', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(7)
+        if feedback.isCanceled():
+            return {}
+
+        # Translate WorldPop(int32)
+        alg_params = {
+            'COPY_SUBDATASETS': False,
+            'DATA_TYPE': 0,
+            'INPUT': outputs['HomologationWorldpop2']['OUTPUT'],
+            'NODATA': None,
+            'OPTIONS': '',
+            'TARGET_CRS': None,
+            'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['TranslateWorldpopint32'] = processing.run('gdal:translate', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+
+        feedback.setCurrentStep(8)
+        if feedback.isCanceled():
+            return {}
+
+        # r.null
+        alg_params = {
+            '-c': False,
+            '-f': False,
+            '-i': False,
+            '-n': False,
+            '-r': False,
+            'GRASS_RASTER_FORMAT_META': '',
+            'GRASS_RASTER_FORMAT_OPT': '',
+            'GRASS_REGION_CELLSIZE_PARAMETER': 0,
+            'GRASS_REGION_PARAMETER': None,
+            'map': outputs['TranslateWorldpopint32']['OUTPUT'],
+            'null': None,
+            'setnull': '-200',
+            'output': QgsProcessing.TEMPORARY_OUTPUT
+        }
+        outputs['Rnull'] = processing.run('grass7:r.null', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        return results
+
+    def name(self):
+        return 'preprocessing'
+
+    def displayName(self):
+        return 'preprocessing'
+
+    def group(self):
+        return ''
+
+    def groupId(self):
+        return ''
+
+    def createInstance(self):
+        return Preprocessing()
+
+                </pre>
+                </div>
+                <div>
+                    <hr>
+                <h2>Abstract</h2>
+                <p align="justify">
+                    
+
+A WebGIS presenting an analysis that tests the accuracy of two publicly available world population data maps; the GHSL and the WorldPop layer against high resolution satellite imagery over an arbitrary study area with an additional intercomparison of the two. The latter produced a dataset of pixel differences between one layer and the other with a mean of -0.33 (people per pixel), representing an extensive similarity and thus preliminarily suggesting a high accuracy of both maps. The wide range in differences however revealed individual areas of great discrepancy in the datasets, specifically in the lower most part of the study area, which needs to be considered when applying the datasets in certain contexts. The accuracy assessment of the two maps resulted in an overall accuracy of 67.2% for the WorldPop layer and 57.2% for the GHSL. Higher producer’s and user’s accuracy indices furthermore suggest an advantage of the WorldPop layer over the GHSL regarding both reliability of map classification and probability of correct identification of class features on the ground.  
+
+                </p>
+                <hr>
+                <h2>Introduction</h2>
+                <p align="justify">
+ 
+
+A reliable source of census information has always formed an essential pillar of administering a society throughout history. The modern world and its challenges have only increased our dependency on such information. World population maps describe the spatial distribution of census data on the land surface of the earth and thus lie at the core of decision-making processes for a vast range of sectors. Data on human population distribution aids policy making, facilitates disaster response and allows disaster risk assessment and monitoring. Due to the significance of their application, it is essential for these datasets to be assessed based on their accuracy and reliability to gain insight on perks and limitations associated with their implementation.
+
+The following project presents an accuracy assessment of the Global Human Settlement Layer (GHSL) by the European Commission and the research-collaboration project WordPop (involving the University of Southampton, Universite Libre de Bruxelles, and the University of Louisville, primarily funded by the Bill and Melinda Gates Foundation).
+
+                </p>
+
+
+<img width="100%" src="http://localhost/webgis/media/fig1.png">
+<p class="title-snippet"> Fig. 1 Study area of 29 tiles each of 10x10km dimension</p>
+
+                <p align="justify">
+
+The map accuracy assessment of the two datasets has been made a two-step process composed of an intercomparison between the two as well as a validation of both datasets, respectively. 
+
+It was carried out over a prescribed study area of 29 tiles 10x10km (see fig. 1). 
+
+An intercomparison of the two datasets reveals the extent of their similarity, which is directly proportional to their representation of reality and thus provides a preliminary indicator for their accuracy; the more similar the two datasets the closer they model reality. 
+
+The comparison of both population maps with a third reference dataset serves as a validation of the maps and provides a more appropriate measure of their accuracy. The applied reference data has been collected via photo-interpretation of high-resolution satellite imagery in 600 stratified random sampling points within the study area.
+
+                </p>
+
+<hr>
+            <h2>Data</h2>
+
+                <p align="justify">
+
+The assessed datasets are spatial raster data (GeoTIFF) obtained from the online sources of the European Commission and the WorldPop project at a 1km spatial resolution (30 arcsec.) for the year of 2015. Populations are expressed as the number of people per grid cell (1km²).
+
+The entire investigation has been carried using QGIS and its tools together with the AcATaMa Plugin.
+
+Global Human Settlement Layer (GHSL) <a href="https://ghsl.jrc.ec.europa.eu/data.php">(https://ghsl.jrc.ec.europa.eu/data.php)</a>
+
+WorldPop <a href="https://www.worldpop.org">(https://www.worldpop.org)</a>
+            
+            </p>
+
+            <hr>
+            <h2>Pre-processing</h2>
+
+
+            <p align="justify">
+
+Although both rasters share the same coordinate reference system, resolution and extension small differences may be present, which will hinder an accurate pixel by pixel comparison of the two rasters.  Therefore to allow intercomparison, pre-processing of the two datasets is necessary. The two rasters were aligned and clipped to the extent of the study area vector layer (Raster > Align Raster). Subsequently both raster have been converted from float to integer values to avoid computational issues related to approximation values (Processing > GDAL > Raster Conversion > Translate).
+
+Once aligned the two datasets need to be harmonized regarding their null value and its indication. The WorldPop raster null value (= -32768) represents seas, oceans, and inland water bodies, while cells with a value of 0 represent not populated areas. The GHSL null value (= -200) only represents seas and oceans, while both inland waterbodies and not populated areas exhibit cell values of 0.
+
+The uniformization of the two datasets is achieved firstly by using the Raster Calculator to change the assigned value for inland waterbodies from -32768 (null value) to 0 in the WorldPop raster to share a classification with the GHSL raster and then setting the same cell value (-200) to null in each dataset.
+
+The results are two raster layers that share a common numerical notation;
+
+seas and oceans = noData (-200 : null value)
+
+inland water bodies and not populated = 0
+
+            </p>
+
+
+                
+
+
+            </div>
+            </div>
+         
+            
+
+
+        <script type="text/javascript" language="javascript">
+            function visualizza(id){
+              if (document.getElementById){
+                if(document.getElementById(id).style.display == 'none'){
+                  document.getElementById(id).style.display = 'block';
+                }else{
+                  document.getElementById(id).style.display = 'none';
+                }
+              }
+            }
+        </script>
+
+
+        </div>
+        <div class="col-md-3 order-md-1">
+            <div class="about-snippet-block text-center">
+                <a class = "action" href="/create">
+                    <button onclick="visualizza('groups'); return false" class="btn btn-outline-secondary button-snippet-create">Groups</button>
+                    
+                </a>
+                <hr>
+        
+                <p class="title-snippet"> Group members</p>
+                    <p>Bosso Francesco <br>10555965</p>
+                    <p>Colli carlo <br>10493935</p>
+                    <p>Dragun Leonie <br>10776334</p>
+                <hr>
+                <p class="title-snippet"> Vision</p>
+
+                <p id="groups" style="display:none">
+                    Gropus<br>
+                    <img src="http://localhost:8082/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=gis_lab:groups">
+                </p>
+                
+            
+        </div>
+            </div>      
+        </div>
+    </div>
+</div>
+    
+    
+</body>
+</html>

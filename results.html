@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Lab</title>
+    <!-- IMPORT OL -->
+    <link rel="stylesheet" href="v6.4.3/css/ol.css"> <script src="v6.4.3/build/ol.js"></script>
+
+    <!-- IMPORT SWITCHER -->
+    <script src="http://rawgit.com/walkermatt/ol-layerswitcher/master/dist/ol-layerswitcher.js"></script>
+    <link rel="stylesheet" href="http://rawgit.com/walkermatt/ol-layerswitcher/master/src/ol-layerswitcher.css">
+
+    
+
+    <!-- JQUERY -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"integrity="sha256- CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="crossorigin="anonymous"></script>
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+
+     <!-- BOOTSTRAP - POPUP -->
+    
+    <script src="v6.4.3/apidoc/scripts/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300&display=swap" rel="stylesheet">
+
+    <!-- LINL CSS FILE -->
+    <link rel="stylesheet" href="blog.css">
+    <title>Document</title>
+
+    
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light navbar-bg-white">
+        <div class="container navbar-container">
+           
+            <a class="navbar-brand" href="homepage.html"><img width="100" src="media/logo.png" alt="">GIS Lab</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="homepage.html" id="homepage">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="intercomparison.html" id="statistics">Intercomparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="validation.html" id="crowdfunding">Validation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html" id="crowdfunding">Results</a>
+                    </li>
+                
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+<title>Homepage</title>
+
+
+
+
+    
+    
+
+
+
+<div class="container contenuto-container">
+    <div class="row no-gutters"> <!-- no gutters serve per eliminare il padding "gutters" = grondaie -->
+        <div class="col-md-9 order-md-2">
+            
+            <div class="single-post-home">
+                
+                <h8 class="created-by"> </h8>
+                <h1>Conclusion and references</h1>
+                
+
+
+        <!-- DISCUSSION OF RESULTS -->
+
+                <div>
+                    <hr>
+                <h2>Conclusion</h2>
+                <p align="justify">
+                    
+
+The intercomparison and accuracy analysis of the WorldPop layer and the GHSL revealed the WorldPop layer to generally be of higher accuracy with an overall accuracy of 67.2%. Additionally, its reliability of classes that can be found as such on the ground (user’s accuracy) together with the probability of a class on the ground to be correctly identified on the map (producer’s accuracy) are both significantly higher in the WorldPop layer than in the GHSL. The intercomparison of the two rasters before reclassification to built and not built areas revealed a high similarity in population values, with a mean of differences of -0.33 (the difference is zero when the maps are equal), suggesting a close model to reality. However, the intercomparison furthermore exposed a zone in the study area where population values between the two maps differed significantly, emphasizing that census data may fail to closely represent reality within this area and should thus be handled with care. 
+
+                </p>
+                <hr>
+                <h2>References</h2>
+                <p align="justify">
+ 
+
+<ul>
+    <li>Gis.humboldt.edu. 2021. Accuracy Metrics. [online] Available at: <http://gis.humboldt.edu/OLM/Courses/GSP_216_Online/lesson6-2/metrics.html> [Accessed 4 February 2021].</li>
+    <br><b>GHSL</b>
+    <li><i>Dataset:  </i>
+
+    Schiavina, Marcello; Freire, Sergio; MacManus, Kytt (2019): GHS population grid multitemporal (1975, 1990, 2000, 2015) R2019A. European Commission, Joint Research Centre (JRC) DOI: 10.2905/42E8BE89-54FF-464E-BE7B-BF9E64DA5218 PID: <a href="http://data.europa.eu/89h/0c6b9751-a71f-4062-830b-43c9f432370f">http://data.europa.eu/89h/0c6b9751-a71f-4062-830b-43c9f432370f</a>
+    </li>
+
+    <br><li><i>Concept & Methodology:  </i>
+    Freire, Sergio; MacManus, Kytt; Pesaresi, Martino; Doxsey-Whitfield, Erin; Mills, Jane (2016): Development of new open and free multi-temporal global population grids at 250 m resolution. Geospatial Data in a Changing World; Association of Geographic Information Laboratories in Europe (AGILE). AGILE 2016.
+    </li>
+
+    <br><b>WorldPOP</b>
+    <li>
+    Worldpop.org. 2021. WorldPop. [online] Available at: <https://www.worldpop.org/> [Accessed 5 February 2021].
+    </li>
+
+</ul>
+
+                </p>
+
+            </p>
+            </div>
+            </div>
+         
+        
+
+
+        </div>
+        <div class="col-md-3 order-md-1">
+            <div class="about-snippet-block text-center">
+        
+                <p class="title-snippet"> Group members</p>
+                    <p>Bosso Francesco <br>10555965</p>
+                    <p>Colli carlo <br>10493935</p>
+                    <p>Dragun Leonie <br>10776334</p>
+                
+
+                
+            
+        </div>
+            </div>      
+        </div>
+    </div>
+</div>
+    
+    
+</body>
+</html>
